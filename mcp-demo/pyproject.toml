@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-py-modules = ["agent", "demo_local", "mcp_client", "mcp_server"]
+py-modules = ["agent", "demo_local", "mcp_client", "mcp_server", "skill_agent"]
 
 [project.optional-dependencies]
 dev = [

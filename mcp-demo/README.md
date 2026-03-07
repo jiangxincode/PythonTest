@@ -34,6 +34,7 @@ mcp-demo/
 ├── mcp_server.py       # MCP服务器 - 提供工具和资源
 ├── mcp_client.py       # MCP客户端 - 连接服务器并调用工具
 ├── agent.py            # LLM Agent - 完整演示LLM+MCP交互
+├── skill_agent.py      # Skill Agent - 支持Skill概念的LLM Agent
 └── README.md           # 说明文档
 ```
 
@@ -65,6 +66,35 @@ Agent将LLM与MCP集成，实现完整的工作流程：
 ```
 用户问题 → LLM分析 → 决定调用工具 → MCP调用 → 获取结果 → LLM生成回答
 ```
+
+### 4. Skill Agent (`skill_agent.py`)
+
+Skill Agent在LLM Agent的基础上引入了**Skill（技能）**的概念，将工具按能力域组织：
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                         Skill Agent                              │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌────────────┐   ┌───────────────────────────────────────┐    │
+│   │    LLM     │   │           Skill Registry               │    │
+│   │ (DeepSeek/ │   ├───────────────────────────────────────┤    │
+│   │  OpenAI)   │   │  MathSkill  │ TimeSkill │  TextSkill  │    │
+│   └────────────┘   │  (本地)    │  (本地)   │   (本地)    │    │
+│         │          ├───────────────────────────────────────┤    │
+│         │          │          NoteSkill (MCP)               │    │
+│         ▼          └───────────────────────────────────────┘    │
+│   Tool Dispatch ─────────────────────────────────────────────▶  │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+| Skill | 类型 | 工具 | 说明 |
+|-------|------|------|------|
+| `MathSkill` | 本地 | `math_calculate` | 数学四则运算 |
+| `TimeSkill` | 本地 | `time_get_current` | 获取当前时间 |
+| `TextSkill` | 本地 | `text_process` | 字符串处理 |
+| `NoteSkill` | MCP | `note_manage` | 笔记管理（调用MCP服务器）|
 
 ## 快速开始
 
@@ -112,6 +142,17 @@ $env:OPENAI_API_KEY = "sk-xxx"
 python agent.py --interactive
 ```
 
+### 4. 运行Skill Agent演示
+
+```bash
+# 演示模式
+python skill_agent.py
+
+# 交互模式
+python skill_agent.py --interactive
+# 在交互模式中输入 'skills' 可查看已注册的所有Skill
+```
+
 ## 代码示例
 
 ### 定义MCP工具
@@ -146,6 +187,23 @@ result = await client.call_tool("calculator", {
     "b": 8
 })
 print(result)  # 计算结果：7 multiply 8 = 56
+```
+
+### Skill Agent集成本地Skill和MCP Skill
+
+```python
+# 创建SkillAgent
+agent = SkillAgent()
+
+# 注册本地Skill（无需MCP服务器）
+agent.register_native_skills()
+
+# 连接MCP服务器并注册MCP Skill
+await agent.connect_mcp()
+agent.register_mcp_skills()
+
+# 使用Agent（LLM自动选择合适的Skill工具）
+response = await agent.chat("帮我计算 99 + 1，再把结果转成字符串并反转")
 ```
 
 ### Agent集成LLM+MCP
